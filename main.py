@@ -45,6 +45,8 @@ class TechnicalAnalysisStrategy:
         self.exchange = "binance"
         self.class_name = self.__class__.__name__
         strategy_log_name = f'{self.symbol}_{self.exchange}_{self.class_name}'
+
+
         self.logger_strategy = setup_logger_global(strategy_log_name, strategy_log_name + '.log')
         
         try:
@@ -61,7 +63,7 @@ class TechnicalAnalysisStrategy:
                 quote=self.quote,
                 session_key=session_key,
             )
-            
+
             self.logger_strategy.info(f"✅ Client initialized for {self.symbol}/{self.quote}")
         except Exception as e:
             self.logger_strategy.error(f"❌ Failed to initialize client: {e}")
@@ -220,6 +222,8 @@ class TechnicalAnalysisStrategy:
     def draw_candles(self, df, pattern_info=None, filename='candles.png'):
         """Draw candlestick chart with detected peaks"""
         try:
+            self.logger_strategy.info(f"Chart Testing to 1")
+
             if df is None or len(df) == 0:
                 return False
             
@@ -227,15 +231,20 @@ class TechnicalAnalysisStrategy:
             df_plot['Date'] = df_plot['open_time']
             df_plot = df_plot.set_index('Date')
             
-            ohlc_data = df_plot[['open', 'high', 'low', 'close']].astype(float)
+            ohlc_data = df_plot[['open', 'high', 'low', 'close', 'volume']].astype(float)
             
+            self.logger_strategy.info(f"Chart Testing to 2")
+
             apds = []
             
             if pattern_info and 'recent_peaks_high' in pattern_info:
+                self.logger_strategy.info(f"Chart Testing to 3")
+
                 peaks_high = pattern_info['recent_peaks_high']
                 if len(peaks_high) > 0:
+                    scatter_data = [df['close'].iloc[p] if p in peaks_high and p < len(df) else np.nan for p in range(len(df))]
                     scatter_high = mpf.make_addplot(
-                        [df['close'].iloc[p] if p < len(df) else np.nan for p in peaks_high],
+                        scatter_data,
                         type='scatter',
                         marker='^',
                         markersize=100,
@@ -244,14 +253,16 @@ class TechnicalAnalysisStrategy:
                     apds.append(scatter_high)
             
             kwargs = dict(type='candle', volume=True, style='charles')
-            
+            self.logger_strategy.info(f"Chart Testing to 4")
+
             if apds:
                 kwargs['addplot'] = apds
             
             output_dir = os.path.join(CURRENT_DIR, 'output')
             os.makedirs(output_dir, exist_ok=True)
             output_path = os.path.join(output_dir, filename)
-            
+            self.logger_strategy.info(f"Chart Testing to 5")
+
             mpf.plot(ohlc_data, **kwargs, savefig=output_path)
             self.logger_strategy.info(f"✅ Chart saved to {output_path}")
             return True
@@ -422,11 +433,11 @@ class TechnicalAnalysisStrategy:
 
 def main():
     params = get_constants()
-    SESSION_ID = params.get("SESSION_ID", "")
-    API_KEY = params.get("API_KEY", "")
-    SECRET_KEY = params.get("SECRET_KEY", "")
+    SESSION_ID = params.get("SESSION_ID", "paper_trade@dattest.vn_test")
+    API_KEY = params.get("API_KEY", "paper_trade")
+    SECRET_KEY = params.get("SECRET_KEY", "paper_trade")
     PASSPHRASE = params.get("PASSPHRASE", "")
-    
+
     if not API_KEY or not SECRET_KEY:
         logger_access.error("❌ API credentials required")
         return
